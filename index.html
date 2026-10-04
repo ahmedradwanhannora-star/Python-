@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>بنك إجابات بايثون </title>
+<style>
+:root{--primary:#10b981;--primary-dark:#059669;--bg:#0f172a;--card-bg:#1e293b;--text:#f8fafc;--text-muted:#94a3b8;--border:#334155;--code-bg:#090d16;--gold:#fbbf24}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--bg);color:var(--text);margin:0;line-height:1.7}
+#auth-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;transition:opacity .5s ease}
+.auth-card{background:var(--card-bg);padding:2.5rem;border-radius:16px;border:1px solid var(--border);text-align:center;box-shadow:0 10px 25px rgba(0,0,0,.5);max-width:400px;width:90%}
+.auth-card h2{color:var(--primary);margin-bottom:.5rem}
+.auth-card p{color:var(--text-muted);margin-bottom:1.5rem}
+.auth-card input{width:100%;padding:.75rem;border-radius:8px;border:1px solid var(--border);background:var(--code-bg);color:#fff;font-size:1.2rem;text-align:center;margin-bottom:1rem;outline:none}
+.auth-card input:focus{border-color:var(--primary)}
+.auth-card button{background:var(--primary);color:#fff;border:0;padding:.75rem 1.5rem;border-radius:8px;font-size:1rem;cursor:pointer;width:100%;font-weight:bold;transition:background .3s}
+.auth-card button:hover{background:var(--primary-dark)}
+.error-msg{color:#ef4444;margin-top:.75rem;font-size:.9rem;display:none}
+#welcome-effect{position:fixed;inset:0;background:rgba(15,23,42,.98);display:none;flex-direction:column;justify-content:center;align-items:center;z-index:9998;animation:fadeIn .5s ease}
+#welcome-effect h1{color:var(--primary);font-size:2.5rem;text-align:center;text-shadow:0 0 20px rgba(16,185,129,.4);animation:scaleUp .8s cubic-bezier(.175,.885,.32,1.275) forwards;padding:0 1rem}
+@keyframes scaleUp{0%{transform:scale(.5);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+#main-content{display:none;animation:fadeIn .8s ease}
+header{background:linear-gradient(135deg,#065f46,var(--primary));color:#fff;text-align:center;padding:2.5rem 1rem;box-shadow:0 4px 6px -1px rgba(0,0,0,.3)}
+header h1{margin:0 0 .5rem;font-size:2.2rem}
+header p{margin:0;opacity:.9;font-size:1.1rem}
+.container{max-width:900px;margin:0 auto 2rem;padding:0 1rem}
+.toolbar{position:sticky;top:0;z-index:50;background:var(--bg);padding:14px 0 6px}
+#q{width:100%;padding:.8rem 1.2rem;border-radius:30px;border:1px solid var(--border);background:var(--card-bg);color:var(--text);font-size:1rem;outline:none}
+#q:focus{border-color:var(--primary)}
+#chips{display:flex;gap:6px;overflow-x:auto;padding:10px 0 6px;scrollbar-width:thin}
+.chip{flex:none;background:var(--card-bg);border:1px solid var(--border);color:var(--text-muted);border-radius:20px;padding:4px 12px;font-size:.8rem;cursor:pointer;transition:.2s}
+.chip:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+.chapter-section{background:var(--card-bg);border-radius:12px;border:1px solid var(--border);margin-bottom:1.2rem;box-shadow:0 4px 6px -1px rgba(0,0,0,.2);overflow:hidden;scroll-margin-top:110px}
+summary.chapter-title{background:#0f766e;color:#fff;padding:1rem 1.5rem;font-size:1.3rem;font-weight:bold;cursor:pointer;display:flex;justify-content:space-between;align-items:center;list-style:none;transition:background .2s}
+summary.chapter-title:hover{background:#0d9488}
+summary::-webkit-details-marker{display:none}
+summary small{font-size:.8rem;font-weight:400;opacity:.8}
+summary:after{content:"▾";transition:transform .2s;margin-right:10px}
+details[open]>summary:after{transform:rotate(180deg)}
+.answers-list{padding:1.5rem}
+.answer-wrapper{background:var(--code-bg);border:1px solid var(--border);border-right:5px solid var(--primary);border-radius:8px;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.answer-wrapper:hover{transform:translateX(-3px);box-shadow:0 0 12px rgba(16,185,129,.25)}
+.answer-item{padding:1rem 1.25rem;font-family:'Courier New',Courier,monospace;white-space:pre-wrap;direction:ltr;text-align:left;color:#34d399;flex-grow:1;overflow-x:auto}
+.copy-btn{background:#334155;color:#fff;border:0;padding:.5rem .8rem;margin:.5rem;border-radius:6px;cursor:pointer;font-size:.85rem;font-weight:bold;transition:background .2s,transform .1s;white-space:nowrap}
+.copy-btn:hover,.copy-btn.copied{background:var(--primary)}
+.copy-btn:active{transform:scale(.95)}
+.choice{background:rgba(251,191,36,.08);border:2px dashed var(--gold);border-radius:10px;padding:.8rem 1.2rem;margin-bottom:1rem;color:#fde68a;font-weight:600;line-height:1.8;white-space:pre-wrap}
+.choice b{display:inline-block;background:var(--gold);color:#422006;border-radius:20px;padding:0 10px;font-size:.75rem;margin-left:8px}
+#none{text-align:center;color:var(--text-muted);padding:30px;display:none}
+footer{text-align:center;padding:2rem;color:var(--text-muted);font-size:.9rem;border-top:1px solid var(--border);margin-top:3rem}
+.whatsapp-float{position:fixed;bottom:20px;right:20px;background:#25d366;color:#fff;border-radius:50px;padding:10px 20px;display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:bold;box-shadow:0 4px 10px rgba(0,0,0,.3);z-index:100;transition:transform .3s,background .3s}
+.whatsapp-float:hover{background:#20ba5a;transform:scale(1.05)}
+.whatsapp-float svg{width:24px;height:24px;fill:#fff}
+#top{position:fixed;bottom:20px;left:20px;width:44px;height:44px;border-radius:50%;border:0;background:var(--primary);color:#fff;font-size:1.2rem;cursor:pointer;z-index:100;display:none}
+</style>
+</head>
+<body>
+<div id="auth-screen"><div class="auth-card"><h2>مرحباً بك يا معلم</h2><p>يرجى إدخال كلمة المرور للمتابعة</p>
+<input type="password" id="password-input" placeholder="أدخل كلمة السر" onkeypress="if(event.key==='Enter')verifyPassword()">
+<button onclick="verifyPassword()">دخول</button><div id="error-msg" class="error-msg">كلمة المرور غير صحيحة!</div></div></div>
+<div id="welcome-effect"><h1>Welcome to our Wrold ✨ Ｂｏｕｄａ 🤎 Ａｈｍｅｄ ✨</h1></div>
+
+<div id="main-content">
+<header><h1>بنك إجابات بايثون </h1><p>الملخصات والإجابات الصافية لكل الفصول من 1 إلى 25</p></header>
+<div class="container">
+<div class="toolbar"><input id="q" type="search" placeholder="🔍 ابحث عن كود أو فصل..."><div id="chips"></div></div>
+<div id="list"></div><div id="none">لا توجد نتائج 🤷</div>
+</div>
+<footer>جميع الحقوق محفوظة &copy; عالم بودا الرقمي 2026</footer>
+</div>
+
+<a href="https://wa.me/" target="_blank" class="whatsapp-float"><svg viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.124-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>تواصل معنا</a>
+<button id="top" onclick="scrollTo({top:0})">↑</button>
+
+<script>
+const CORRECT_PASSWORD="1234";
+// كل إجابة مفصولة بسطر ~~ ، والتي تبدأ بـ @@ تظهر كإجابة اختياري (بدون نسخ)
+const D=[
+["الفصل الأول بايثون",`print("Hello")
+~~
+print("Good morning")
+~~
+print("Good evening")
+~~
+print("Good night")
+~~
+print("Let's do our best")
+~~
+#
+~~
+#Write a comment here
+~~
+print("Hello")
+print("My name is")
+#print("Rick")
+print("Cody")`],
+["مراجعة الفصل الأول",`print("Hello")
+~~
+print("Good morning")
+~~
+print("programming")
+~~
+print("hello")`],
+["الفصل الثاني بايثون",`print("Let's calculate")
+~~
+print("5+2")
+~~
+print(5+2)
+~~
+print(1200+2800)
+~~
+print(278+422)
+~~
+print(3000-850)
+~~
+print(7*6)
+~~
+print(48/6)
+~~
+print(200000000000*300000000000)
+~~
+@@+
+~~
+str(350*3)
+~~
+str(200*1)
+~~
++str(200*2)+
+~~
+print(type(500))
+print(type("500codycoins"))
+~~
+print(type("100"))`],
+["مراجعة الفصل الثاني",`print(50 + 100)
+~~
+@@/
+~~
+print(19 + 40)
+~~
+print(15 / 5)
+~~
+print("Today is the 17th. 7 days ago was the " + str(17 - 7) + "th.")
+~~
+print(7 - 2)
+~~
+print("The answer is " + str(2 * 5) + ".")
+~~
+@@نوع السلسلة النصية
+~~
+print(type("1"))`],
+["الفصل الثالث",`print(apples)
+~~
+print("apples")
+~~
+grapes = 0
+grapes = grapes + 8
+grapes = grapes + 12
+print(grapes)
+~~
+strawberries=0
+strawberries=strawberries+5
+strawberries=strawberries+8
+print(strawberries)
+~~
+pears=4
+pears=pears+6
+pears=pears+7
+print(pears)`],
+["مراجعة الفصل الثالث",`score = 0
+~~
+print(score)
+~~
+number = 0
+~~
+number = 0
+number = 100
+~~
+number = 0
+number = 10
+print(number)
+~~
+number = 3
+number = number + 10
+print(number)`],
+["الفصل الرابع",`#Write the program on the line below
+print("Good evening")
+~~
+print("Cookies and juice cost " + str(120+80) + "codycoins")
+~~
+apples=2
+apples=apples+8
+print(apples)`],
+["مراجعة الفصل الرابع",`print("Hello")
+~~
+print("hello")
+~~
+#I'll leave this text here.
+print("Comment out the first line")
+~~
+print(5 + 7)
+~~
+@@*
+~~
+print("The answer is " + str(3 * 4) + ".")
+~~
+number = 0
+~~
+num = 5
+print(num)`],
+["الفصل الخامس",`books=80
+~~
+if books==100:
+~~
+print("Reading Champion Badge!")
+~~
+books=100
+if books==100:
+    print("Reading Champion Badge!")
+~~
+english=100
+if english==100:
+    print("Get a reward")`],
+["مراجعة الفصل الخامس",`num = 5
+print(num)
+~~
+if conditional expression:
+    process
+~~
+num == 50
+~~
+num = 100
+if num == 100:
+    print("Correct")
+~~
+@@False`],
+["الفصل السادس",`books=100
+if books==100:
+    print("Reading Champion Badge!")
+~~
+else:
+~~
+print("Let's try a little more!")
+~~
+print("No reward")
+~~
+if cookie == 0:
+~~
+lucky = 777
+if lucky ==777:
+ print("Lucky!")
+else:
+    print("Try again")
+~~
+chem = 28
+if chem <= 40:
+    print("Practice worksheet")
+else:
+    print("No worksheet")
+~~
+english>=65:
+~~
+height>132:
+~~
+height<90:
+~~
+age = 15
+if age <= 16:
+    print("Entry not allowed")
+else:
+    print("Entry allowed")
+~~
+age=15
+if age >=65:
+  print("Slide closed")
+else:
+    print("Slide OK")
+~~
+weather = "Cloudy"
+
+if weather != "Rainy":
+    print("Play soccer")
+~~
+myScore = 90
+
+if myScore!=100:
+    print("Aim for a perfect score!")`],
+["مراجعة السادس",`if conditional expression:
+    A
+else:
+    B
+~~
+num = 5
+if num == 10:
+    print("Win")
+else:
+    print("No prize")
+~~
+num <= 80
+~~
+num > 30
+~~
+score = 80
+if score >= 60:
+    print("Pass")
+else:
+    print("Fail")`],
+["الفصل السابع",`ticket = 2
+if ticket == 1:
+    print("Free drink")
+elif ticket == 2:
+    print("Includes popcorn")
+~~
+ticket = 3
+if ticket == 1:
+    print("Free drink")
+elif ticket == 2:
+    print("Includes popcorn")
+elif ticket ==3:
+    print("Mini snack set")
+~~
+ticket = 4
+if ticket == 1:
+    print("Free drink")
+elif ticket == 2:
+    print("Includes popcorn")
+elif ticket == 3:
+    print("Mini snack set")
+elif ticket ==4:
+    print("Goods voucher")
+~~
+ticket = 10
+if ticket == 1:
+    print("Free drink")
+elif ticket == 2:
+    print("Includes popcorn")
+elif ticket == 3:
+    print("Mini snack set")
+elif ticket == 4:
+    print("Goods voucher")
+else:
+    print("No prize")
+~~
+people = 3
+if people == 2:
+    print("10% off")
+elif people >= 3:
+    print("20% off")
+else:
+    print("Regular price")
+~~
+print("It's almost gone")`],
+["مراجعة السابع",`if condition:
+    A
+elif conditions:
+    B
+~~
+elif num == 2:
+    print("It's 2")
+~~
+elif score >= 80:
+    print("Pass")
+~~
+@@So close
+~~
+egg = 5
+if egg == 0:
+    print("Out of stock")
+elif egg <= 3:
+    print("Low stock")
+else:
+    print("In stock")`],
+["الفصل الثامن",`books = 100
+if books == 100:
+    print("Reading Champion Badge!")
+~~
+books = 80
+if books == 100:
+    print("Reading Champion Badge!")
+else:
+        print("Let's try a little harder!")
+~~
+if age <= 16:
+~~
+print("Entry not allowed")
+~~
+else:
+~~
+print("Entry allowed")
+~~
+english = 77
+if english == 100:
+    print("Perfect score")
+elif english >= 75:
+    print("Pass")
+else: 
+    print("Make-up exam")`],
+["الفصل التاسع",`if people >= 2 or points >= 3000:
+    print("10% off")
+~~
+people = 2
+points = 3500
+if people >= 2 and points >= 3000:
+    print("Get an eco bag")
+~~
+age = 15
+if age <= 12 or age >= 65:
+    print("30% off")`],
+["الفصل العاشر",`for count in range(10):
+    print("deer")
+~~
+for i in range(1, 3):
+    print("She sells seashells")`],
+["الفصل الحادي عشر",`import math
+import random
+
+print(round(10.6))
+print(max(10, 25, 18))
+print(min(5, 10, 50))
+print(math.floor(10.5))
+print(random.random())`],
+["الفصل الثاني عشر",`def split3(total):
+    result = total / 3
+    return result
+print(split3(5000))`],
+["الفصل الثالث عشر",`temp_list = [35, 34, 26, 29, 31, 33, 35]
+print(temp_list[2])
+print(len(temp_list))`],
+["الفصل الرابع عشر",`import array
+warn_array = array.array('i', [2, 2, 1, 1, 2, 1, 2])
+print(warn_array[0])`],
+["الفصل الخامس عشر",`score = 85
+if score == 100:
+    print("Won the Golden Frying Pan")
+elif score >= 85:
+    print("Dessert Party")
+else:
+    print("Dishwashing Duty")`],
+["الفصل السادس عشر",`def sum(stage1_time, stage2_time, stage3_time):
+    time = stage1_time + stage2_time + stage3_time
+    return time
+
+teamA = sum(37.5, 62.5, 56.5)
+print(teamA)`],
+["الفصل السابع عشر",`record_list = ["absent", "present", "present", "present", "absent"]
+count = 0
+for day in record_list:
+    if day == "present":
+        count = count + 1
+print(count)`],
+["الفصل الثامن عشر",`print(type(is_sunny))
+stamp_count >= 8 and help_count >= 4
+result = True
+result = False
+result and quiz_score >= 75
+print(type(is_sunny))
+~~
+@@مراجعة 18: <class 'bool'> / ON / STR / B / On`],
+["الفصل التاسع عشر",`import math
+print(math.floor(87.5 / 12.3))
+
+import math
+print(math.floor(7.6))
+print(round(7.6))
+
+import math
+print(math.floor(64.8 / 9.5))
+
+import random
+print(random.random())
+print(random.random() * 10)
+
+import math
+print(math.floor(random.random() * 10))
+
+import math
+print(math.floor(4.7))
+
+import random
+if random.random() >= 0.7:
+    print("Grand prize!")
+else:
+    print("Consolation prize")
+~~
+@@مراجعة 19: 5 / 6 / رقم من 0 إلى أقل من 1`,1],
+["الفصل العشرون",`if is_ready:
+print(type(is_ready))
+result = True
+result = False
+import math
+print(math.floor(64.8 / 9.5))
+math.floor(random.random() * 10)
+~~
+@@مراجعة 20: on / str / <class 'bool'>`],
+["الفصل الحادي والعشرون",`score = 100
+if score == 100:
+    print("Won the Golden Frying Pan")
+
+score = 85
+if score == 100:
+    print("Won the Golden Frying Pan")
+elif score >= 85:
+    print("Dessert Party")
+else:
+    print("Dishwashing Duty")
+
+temperature = 180
+cook_time = 12
+if temperature >= 170:
+    print("Heating temperature OK")
+if cook_time >= 12:
+    print("Cooking successful")
+
+sauce_temp = 98
+thickness = 2
+if sauce_temp >= 95:
+    print("Sauce is ready")
+if thickness >= 3:
+    print("Thickness is enough")
+
+for i in range(7):
+    print("Yay")
+
+for i in range(5):
+    print("vocal warm-up")
+    if i == 2:
+        print("tongue twister practice")
+
+for i in range(5):
+    print("sandwich")
+    if i == 1:
+        print("water bottle")
+
+for i in range(5):
+    print("cookie")
+    if i == 3:
+        print("chocolate")
+
+point = 0
+point += 3
+print(point)
+
+num = 0
+num += 5
+print(num)
+
+def divide6(total):
+    per = total / 6
+    return per
+
+def split5(total):
+    per = total / 5
+    return per
+print(split5(7500))
+
+def goodEvening():
+    greeting = "Good evening!"
+    return greeting
+print(goodEvening())
+
+def sum(num1, num2):
+    result = num1 + num2
+    return result
+print(sum(50, 100))
+
+score = 82
+if score == 100:
+    print("Perfect score")
+elif score >= 75:
+    print("Pass")
+else:
+    print("Retake exam")
+
+score = 90
+rank = 1
+if score >= 85:
+    print("Certification passed")
+if rank == 1:
+    print("Trophy earned")
+
+for i in range(3):
+    print("Stretch")
+    if i == 1:
+        print("Running")
+
+def goodMorning():
+    greeting = "Good morning"
+    return greeting
+print(goodMorning())
+
+def calc(num1, num2):
+    result = num1 * num2
+    return result
+print(calc(55, 75))
+
+A = 5
+B = 10
+if A > B:
+    print("A is bigger")
+elif A < B:
+    print("B is bigger")
+
+math_score = 100
+english = 100
+if math_score == 100:
+    print("Math is 100 points")
+if english == 100:
+    print("Math and English are 100 points")
+
+for i in range(7):
+    print("Good morning")
+
+i += 5
+
+def divide3(num):
+    result = num / 3
+    return result
+print(divide3(12345))
+
+def mul(num1, num2):
+    result = num1 * num2
+    return result
+print(mul(9, 7))
+~~
+@@مراجعة 21: نتج خطأ / 00010`,1],
+["الفصل الثاني والعشرون",`num = 1
+for i in range(4):
+    num = num * 3
+print(num)
+
+num = 1
+for i in range(3):
+    num = num * 5
+print(num)
+
+num = 1
+for i in range(2, 7):
+    num = num * i
+print(num)
+
+num = 1
+for i in range(2, 10):
+    num = num * i
+print(num)
+
+body_temp_list = [36.1, 36.4, 36.6, 36.5, 36.7]
+print(body_temp_list[2])
+print(body_temp_list[3])
+
+body_temp_list = [36.1, 36.4, 36.6, 36.5, 36.7, 36.0, 36.2]
+total = 0
+for i in range(7):
+    total = total + body_temp_list[i]
+print(total / 7)
+
+body_temp_list = [36.1, 36.4, 36.6, 36.5, 36.7, 36.0, 36.2, 36.8, 36.6, 36.5, 36.9, 36.4, 36.7, 37.0]
+print(len(body_temp_list))
+
+body_temp_list = [36.1, 36.4, 36.6, 36.5, 36.7, 36.0, 36.2, 36.8, 37.1, 36.5, 36.9, 36.4, 36.7, 37.2]
+for i in range(len(body_temp_list)):
+    if body_temp_list[i] >= 37.0:
+        print("Caution!")
+
+for i in range(len(body_temp_list)):
+    if body_temp_list[i] >= 37.5:
+        print("Take a rest!")
+~~
+@@مراجعة 22: total / len(body_temp_list)`,1],
+["الفصل الثالث والعشرون",`low_temp_list = [1, 3, 2, -1, 0, 2, 1]
+print(low_temp_list[4])
+
+for i in range(7):
+    print(low_temp_list[i])
+
+past_temp_list = [7, 10, 12, 9, 11, 8, 15]
+for temp in past_temp_list:
+    print(temp)
+
+num_list = [4, 8, 12, 16]
+for num in num_list:
+    print(num)
+
+fruit_list = ["lime", "berry", "mango"]
+for fruit in fruit_list:
+    print(fruit)
+
+point_list = [2, 5, 8, 11]
+for point in point_list:
+    print(point)
+
+word_list = ["Good morning", "Good night", "Hello"]
+for word in word_list:
+    print(word)
+~~
+@@مراجعة 23: 14 / 8 / 11 / 14 / 3 / 4 / 5`,1],
+["الفصل الرابع والعشرون",`score = 100
+if score == 100:
+    print("Got a Gold Badge")
+
+score = 88
+if score == 100:
+    print("Got a Gold Badge")
+elif score >= 85:
+    print("Reward: Parfait")
+
+score = 65
+if score == 100:
+    print("Got a Gold Badge")
+elif score >= 85:
+    print("Reward: Parfait")
+else:
+    print("Review weak topics")
+
+bug = 45
+rare_count = 0
+if bug >= 45:
+    print("Got a Rare Beetle!")
+    rare_count = rare_count + 1
+print("Rare Beetle Counter:" + str(rare_count))
+
+bug = 95
+super_rare_count = 0
+if bug >= 90:
+    print("Super Rare Beetle Get!")
+    super_rare_count = super_rare_count + 1
+print("Super Rare Beetle Counter:" + str(super_rare_count))
+
+weather = "sunny"
+if weather == "sunny":
+    print("Stargazing on the hilltop")
+else:
+    print("Planetarium DVD at home")
+
+weather = "sunny"
+if weather == "sunny":
+    print("Let's go on the field trip")
+else:
+    print("Field trip canceled")
+
+weather = "sunny"
+team = "Red Team"
+if weather == "sunny":
+    if team == "Red Team":
+        print("Destination: the farm")
+    else:
+        print("Destination: the science museum")
+else:
+    print("Field trip canceled")
+
+weather = "sunny"
+team = "Green Team"
+if weather == "sunny":
+    if team == "Red Team":
+        print("Destination: the farm")
+    elif team == "Blue Team":
+        print("Destination: the science museum")
+    else:
+        print("Destination: the candy factory")
+else:
+    print("Field trip canceled")
+
+cold_temp_list = [6, 8, 10, 9, 11, 7, 13]
+for temp in cold_temp_list:
+    print(temp)
+
+food_list = ["tomato", "carrot", "onion"]
+for food in food_list:
+    print(food)
+
+weather = "sunny"
+shop = "open"
+if weather == "sunny":
+    if shop == "open":
+        print("Buy a star chart and go stargazing")
+    else:
+        print("Watch a planetarium DVD at home")
+
+weather = "sunny"
+team = "Team Blue"
+if weather == "sunny":
+    if team == "Team Red":
+        print("Destination is the farm")
+    elif team == "Team Blue":
+        print("Destination is the science museum")
+    else:
+        print("Destination is the sweets factory")
+else:
+    print("Field trip cancelled")
+
+weather = "rainy"
+time = "morning"
+if weather == "rainy":
+    if time == "morning":
+        print("Let's go to the movie theater")
+    elif time == "noon":
+        print("Let's go to the library")
+    else:
+        print("Let's stay home")
+else:
+    print("Let's go for a walk")
+~~
+@@مراجعة 24: 8 / 11 / 14 / 100 / الوجهة مدينة ملاهي`,1],
+["الفصل الخامس والعشرون",`def sum(stage1_time, stage2_time):
+    result = stage1_time + stage2_time
+    return result
+print(sum(37.5, 62.5))
+
+def sum(stage1_time, stage2_time, stage3_time):
+    time = stage1_time + stage2_time + stage3_time
+    return time
+
+teamA = sum(37.5, 62.5, 56.5)
+print(teamA)
+teamB = sum(44, 57, 64)
+print(teamB)
+teamC = sum(42, 63.5, 59)
+print(teamC)
+
+print(str(min(teamA, teamB, teamC)))
+
+record_list = ["absent", "present", "present", "present", "absent", "present", "absent", "present", "present", "present", "absent", "present", "present", "absent"]
+count = 0
+for day in record_list:
+    if day == "present":
+        count = count + 1
+print(count)
+
+ticket_type = "dessert"
+if ticket_type == "main dish":
+    print("Check the type of ticket")
+else:
+    print("Use the cake ticket")
+
+ticket_type = "main dish"
+main_ticket = "fish and chips ticket"
+if ticket_type == "main dish":
+    if main_ticket == "fish and chips ticket":
+        print("Exchange it with Cody")
+    else:
+        print("Use the steak ticket")
+else:
+    print("Use the cake ticket")
+
+def calculation3(a, b, c):
+    result = a * b * c
+    return result
+num1 = calculation3(5, 10, 15)
+print(num1)
+num2 = calculation3(4, 4, 4)
+print(num2)
+
+score_list = [70, 80, 66, 88, 92]
+for score in score_list:
+    if score >= 80:
+        print(score)
+~~
+@@# كان عمرك 12 سنة أو أكثر وكان طولك 140 سم أو أكثر يمكنك الركوب بمفردك`,1]
+];
+
+function verifyPassword(){
+  const ok=document.getElementById("password-input").value===CORRECT_PASSWORD;
+  if(!ok){document.getElementById("error-msg").style.display="block";return}
+  const a=document.getElementById("auth-screen");a.style.opacity="0";
+  setTimeout(()=>{a.style.display="none";
+    const w=document.getElementById("welcome-effect");w.style.display="flex";
+    setTimeout(()=>{w.style.display="none";document.getElementById("main-content").style.display="block"},2000);
+  },500);
+}
+function copyText(btn,text){
+  navigator.clipboard.writeText(text).then(()=>{
+    const o=btn.innerText;btn.innerText="تم النسخ!";btn.classList.add("copied");
+    setTimeout(()=>{btn.innerText=o;btn.classList.remove("copied")},1500);
+  }).catch(e=>console.error("فشل النسخ: ",e));
+}
+
+const list=document.getElementById("list"),chips=document.getElementById("chips");
+D.forEach(([title,body,split],i)=>{
+  let items=body.split("\n~~\n");
+  if(split)items=items.flatMap(x=>x.startsWith("@@")?[x]:x.split("\n\n"));
+  const d=document.createElement("details");d.className="chapter-section";d.id="c"+i;if(i===0)d.open=true;
+  d.innerHTML=`<summary class="chapter-title"><span></span><small>${items.length} إجابة</small></summary><div class="answers-list"></div>`;
+  d.querySelector("span").textContent=title;
+  const box=d.querySelector(".answers-list");
+  items.forEach(t=>{
+    if(t.startsWith("@@")){
+      const c=document.createElement("div");c.className="choice";
+      c.innerHTML="<b>✅ إجابة</b>";c.append(document.createTextNode(t.slice(2)));box.append(c);return;
+    }
+    const w=document.createElement("div");w.className="answer-wrapper";
+    const a=document.createElement("div");a.className="answer-item";a.textContent=t;
+    const b=document.createElement("button");b.className="copy-btn";b.textContent="نسخ";
+    b.onclick=()=>copyText(b,t);
+    w.append(a,b);box.append(w);
+  });
+  list.append(d);
+  const ch=document.createElement("button");ch.className="chip";
+  ch.textContent=title.replace("الفصل ","").replace("مراجعة","م.").replace(" بايثون","");
+  ch.onclick=()=>{d.open=true;d.scrollIntoView()};
+  chips.append(ch);
+});
+
+document.getElementById("q").oninput=e=>{
+  const v=e.target.value.trim().toLowerCase();let any=false;
+  document.querySelectorAll("details").forEach(d=>{
+    const th=d.querySelector("span").textContent.toLowerCase().includes(v);
+    let n=0;
+    d.querySelectorAll(".answer-wrapper,.choice").forEach(s=>{
+      const hit=!v||th||s.textContent.toLowerCase().includes(v);
+      s.style.display=hit?"":"none";if(hit)n++;
+    });
+    d.style.display=n?"":"none";if(v)d.open=n>0;if(n)any=true;
+  });
+  document.getElementById("none").style.display=any?"none":"block";
+};
+const topBtn=document.getElementById("top");
+addEventListener("scroll",()=>topBtn.style.display=scrollY>600?"block":"none");
+</script>
+</body>
+</html>
